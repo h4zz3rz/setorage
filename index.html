@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galeri Liburan Keluarga - Uncompressed Photo Vault</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            700: '#075985',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- EXIF JS Library for metadata extraction -->
+    <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.05); }
+        .dark ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); }
+        ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.2); border-radius: 4px; }
+        .dark ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.4); }
+        .dark ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.4); }
+        
+        .masonry-grid {
+            column-count: 1;
+            column-gap: 1.25rem;
+        }
+        @media (min-width: 640px) { .masonry-grid { column-count: 2; } }
+        @media (min-width: 1024px) { .masonry-grid { column-count: 3; } }
+        @media (min-width: 1280px) { .masonry-grid { column-count: 4; } }
+        .masonry-item {
+            break-inside: avoid;
+            margin-bottom: 1.25rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-slate-900 text-gray-800 dark:text-gray-100 min-h-screen flex flex-col transition-colors duration-200">
+
+    <!-- TOP NAVIGATION BAR -->
+    <header class="sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-gray-200 dark:border-slate-800 transition-colors">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Brand Title -->
+                <div class="flex items-center gap-3">
+                    <div class="bg-gradient-to-tr from-brand-600 to-indigo-600 text-white p-2.5 rounded-xl shadow-md shadow-brand-500/20">
+                        <i class="fa-solid fa-vault text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg leading-tight tracking-tight text-gray-900 dark:text-white flex items-center gap-2">
+                            Family Vault <span class="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 text-xs px-2 py-0.5 rounded-full font-semibold border border-emerald-300 dark:border-emerald-800">Original Quality</span>
+                        </h1>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Penyimpanan Foto Liburan Tanpa Kompresi</p>
+                    </div>
+                </div>
+
+                <!-- Central Search Bar -->
+                <div class="hidden md:flex flex-1 max-w-md mx-8">
+                    <div class="relative w-full">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </span>
+                        <input type="text" id="searchInput" oninput="handleSearch()" placeholder="Cari nama foto, tag, atau tempat..." 
+                            class="w-full pl-10 pr-4 py-2 text-sm bg-gray-100 dark:bg-slate-800 border border-transparent dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-900 focus:border-brand-500 focus:outline-none transition-all">
+                    </div>
+                </div>
+
+                <!-- Right Action Buttons -->
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <!-- Netlify Deploy Helper Button -->
+                    <button onclick="openModal('netlifyModal')" title="Petunjuk Deploy Netlify" class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-colors">
+                        <i class="fa-solid fa-cloud-arrow-up text-lg text-teal-500"></i>
+                    </button>
+
+                    <!-- Firebase Config Modal Toggle -->
+                    <button onclick="openModal('firebaseModal')" id="cloudSyncBtn" title="Konfigurasi Firebase Sync" class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-colors relative">
+                        <i class="fa-solid fa-cloud text-lg"></i>
+                        <span id="syncBadge" class="absolute top-1 right-1 w-2.5 h-2.5 bg-amber-500 rounded-full border-2 border-white dark:border-slate-900"></span>
+                    </button>
+
+                    <!-- Dark Mode Toggle -->
+                    <button onclick="toggleDarkMode()" class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-colors">
+                        <i id="themeIcon" class="fa-solid fa-moon text-lg"></i>
+                    </button>
+
+                    <!-- Upload Button Primary -->
+                    <button onclick="triggerFileInput()" class="bg-brand-600 hover:bg-brand-700 text-white font-medium px-4 py-2 rounded-xl text-sm flex items-center gap-2 shadow-sm transition-all hover:shadow-brand-500/20 active:scale-95">
+                        <i class="fa-solid fa-upload"></i>
+                        <span class="hidden sm:inline">Unggah Foto</span>
+                    </button>
+                    <input type="file" id="fileInput" multiple accept="image/*" class="hidden" onchange="handleFileSelect(event)">
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 flex flex-col md:flex-row gap-6">
+        
+        <!-- SIDEBAR FILTER & ALBUMS -->
+        <aside class="w-full md:w-64 flex-shrink-0 space-y-6">
+            
+            <!-- Quick Navigation -->
+            <div class="bg-white dark:bg-slate-800/80 rounded-2xl p-4 border border-gray-200/80 dark:border-slate-700/60 shadow-sm">
+                <h3 class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 px-2">Navigasi Utama</h3>
+                <nav class="space-y-1">
+                    <button onclick="setFilter('all')" id="nav-all" class="nav-btn w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-950/50 dark:text-brand-400 transition-colors">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-images w-4 text-center"></i>
+                            <span>Semua Foto</span>
+                        </div>
+                        <span id="count-all" class="text-xs px-2 py-0.5 rounded-full bg-brand-100 dark:bg-brand-900 text-brand-700 dark:text-brand-300">0</span>
+                    </button>
+
+                    <button onclick="setFilter('favorites')" id="nav-favorites" class="nav-btn w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-star w-4 text-center text-amber-500"></i>
+                            <span>Favorit Saya</span>
+                        </div>
+                        <span id="count-favorites" class="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-400">0</span>
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Albums Section -->
+            <div class="bg-white dark:bg-slate-800/80 rounded-2xl p-4 border border-gray-200/80 dark:border-slate-700/60 shadow-sm">
+                <div class="flex items-center justify-between mb-3 px-2">
+                    <h3 class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Album Liburan</h3>
+                    <button onclick="openModal('createAlbumModal')" class="text-xs text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1">
+                        <i class="fa-solid fa-plus"></i> Baru
+                    </button>
+                </div>
+                <div id="albumList" class="space-y-1 max-h-48 overflow-y-auto pr-1">
+                    <!-- Dynamic Albums injected here -->
+                </div>
+            </div>
+
+            <!-- Tags Filter -->
+            <div class="bg-white dark:bg-slate-800/80 rounded-2xl p-4 border border-gray-200/80 dark:border-slate-700/60 shadow-sm">
+                <h3 class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 px-2">Tag Populer</h3>
+                <div id="tagsList" class="flex flex-wrap gap-1.5">
+                    <!-- Dynamic Tags injected here -->
+                </div>
+            </div>
+
+            <!-- Storage Usage Stats Card -->
+            <div class="bg-white dark:bg-slate-800/80 rounded-2xl p-4 border border-gray-200/80 dark:border-slate-700/60 shadow-sm">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                        <i class="fa-solid fa-database text-brand-500"></i> Kuota Storage
+                    </span>
+                    <span id="storageModeTag" class="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 font-medium text-slate-600 dark:text-slate-300">IndexedDB</span>
+                </div>
+                <div class="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2 mb-2 overflow-hidden">
+                    <div id="storageBar" class="bg-brand-600 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+                <div class="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
+                    <span id="storageUsedText">0 MB Terpakai</span>
+                    <span id="storageLimitText">Kapasitas Asli</span>
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="flex-1 space-y-6">
+            
+            <!-- Drag and Drop Active Overlay & Upload Area -->
+            <div id="dropZone" class="border-2 border-dashed border-gray-300 dark:border-slate-700 hover:border-brand-500 dark:hover:border-brand-500 rounded-2xl p-6 text-center transition-all bg-white/50 dark:bg-slate-800/30 group cursor-pointer relative"
+                 ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleFileDrop(event)" onclick="triggerFileInput()">
+                <div class="flex flex-col items-center justify-center space-y-2 pointer-events-none">
+                    <div class="w-12 h-12 rounded-full bg-brand-50 dark:bg-brand-950/60 text-brand-600 dark:text-brand-400 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                    </div>
+                    <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
+                        Tarik & Lepaskan foto resolusi tinggi di sini, atau <span class="text-brand-600 dark:text-brand-400 hover:underline">Pilih Berkas</span>
+                    </p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500">
+                        Mendukung JPEG, PNG, WEBP, HEIC, RAW. Foto disimpan 100% tanpa kompresi canvas.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Upload Progress Container (Hidden when empty) -->
+            <div id="uploadProgressContainer" class="hidden space-y-2 bg-white dark:bg-slate-800 rounded-2xl p-4 border border-gray-200 dark:border-slate-700">
+                <div class="flex justify-between items-center text-xs font-semibold">
+                    <span id="uploadStatusText" class="text-gray-700 dark:text-gray-300">Mengunggah Foto...</span>
+                    <span id="uploadPercentText" class="text-brand-600 dark:text-brand-400">0%</span>
+                </div>
+                <div class="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                    <div id="uploadProgressBar" class="bg-brand-600 h-1.5 rounded-full transition-all duration-200" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Active Filter Bar Header -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-800/80 p-4 rounded-2xl border border-gray-200/80 dark:border-slate-700/60 shadow-sm">
+                <div>
+                    <h2 id="currentFilterTitle" class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        Semua Foto Liburan
+                    </h2>
+                    <p id="currentFilterDesc" class="text-xs text-gray-500 dark:text-gray-400">Menampilkan seluruh arsip berkas foto kualitas tinggi</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <select id="sortBySelect" onchange="handleSortChange()" class="text-xs bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 border-none rounded-xl px-3 py-2 focus:ring-1 focus:ring-brand-500 outline-none">
+                        <option value="newest">Terbaru Diunggah</option>
+                        <option value="oldest">Terlama</option>
+                        <option value="size">Ukuran Terbesar</option>
+                        <option value="name">Nama Berkas</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Masonry Photo Grid -->
+            <div id="photoGrid" class="masonry-grid">
+                <!-- Photo Cards dynamically injected -->
+            </div>
+
+            <!-- Empty State Display -->
+            <div id="emptyState" class="hidden flex-col items-center justify-center py-16 text-center space-y-4">
+                <div class="w-20 h-20 bg-gray-100 dark:bg-slate-800 text-gray-400 rounded-full flex items-center justify-center text-3xl">
+                    <i class="fa-regular fa-image"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-semibold text-gray-700 dark:text-gray-200">Belum Ada Foto Ter simpan</h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-sm">Unggah foto momen liburan keluarga Anda dengan kualitas resolusi asli tanpa terpotong.</p>
+                </div>
+                <button onclick="triggerFileInput()" class="bg-brand-600 hover:bg-brand-700 text-white font-medium px-4 py-2 rounded-xl text-xs flex items-center gap-2">
+                    <i class="fa-solid fa-plus"></i> Unggah Sekarang
+                </button>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- LIGHTBOX MODAL VIEWER -->
+    <div id="lightboxModal" class="fixed inset-0 z-50 hidden bg-black/95 backdrop-blur-md flex flex-col transition-opacity duration-300">
+        <!-- Lightbox Header Controls -->
+        <div class="flex items-center justify-between p-4 text-white z-10 bg-gradient-to-b from-black/80 to-transparent">
+            <div class="flex items-center gap-3">
+                <button onclick="closeLightbox()" class="p-2 hover:bg-white/10 rounded-full transition-colors">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+                <div>
+                    <h3 id="lightboxFilename" class="text-sm font-semibold truncate max-w-xs sm:max-w-md">filename.jpg</h3>
+                    <p id="lightboxDimensions" class="text-xs text-gray-400">4000 x 3000 px • 12.4 MB</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <button id="lightboxStarBtn" onclick="toggleFavoriteCurrent()" class="p-2.5 hover:bg-white/10 rounded-xl text-amber-400 transition-colors">
+                    <i class="fa-regular fa-star text-lg"></i>
+                </button>
+                <button onclick="downloadOriginal()" class="bg-brand-600 hover:bg-brand-700 text-white font-medium px-3.5 py-1.5 rounded-xl text-xs flex items-center gap-2 shadow-lg transition-transform active:scale-95">
+                    <i class="fa-solid fa-download"></i>
+                    <span class="hidden sm:inline">Download Asli (Uncompressed)</span>
+                </button>
+                <button onclick="toggleExifSidebar()" class="p-2.5 hover:bg-white/10 rounded-xl text-gray-300 hover:text-white transition-colors" title="Informasi Metadata">
+                    <i class="fa-solid fa-circle-info text-lg"></i>
+                </button>
+                <button onclick="deleteCurrentPhoto()" class="p-2.5 hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded-xl transition-colors" title="Hapus Foto">
+                    <i class="fa-regular fa-trash-can text-lg"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Lightbox Main Stage -->
+        <div class="flex-1 relative flex items-center justify-center overflow-hidden p-4">
+            <!-- Navigation Arrow Left -->
+            <button onclick="navigateLightbox(-1)" class="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-black/40 hover:bg-black/70 text-white rounded-full transition-all z-10">
+                <i class="fa-solid fa-chevron-left text-xl"></i>
+            </button>
+
+            <!-- Image View Container -->
+            <div class="relative max-w-full max-h-full flex items-center justify-center">
+                <img id="lightboxImage" src="" alt="Lightbox View" class="max-h-[85vh] max-w-[90vw] object-contain transition-transform duration-200 rounded-lg">
+            </div>
+
+            <!-- Navigation Arrow Right -->
+            <button onclick="navigateLightbox(1)" class="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-black/40 hover:bg-black/70 text-white rounded-full transition-all z-10">
+                <i class="fa-solid fa-chevron-right text-xl"></i>
+            </button>
+
+            <!-- EXIF Metadata Sidebar Drawer -->
+            <div id="exifSidebar" class="hidden absolute right-0 top-0 bottom-0 w-80 bg-slate-900/90 backdrop-blur-lg border-l border-slate-800 p-6 text-slate-200 overflow-y-auto space-y-6 z-20">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                    <h4 class="font-bold text-sm text-white flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-brand-400"></i> Metadata & EXIF
+                    </h4>
+                    <button onclick="toggleExifSidebar()" class="text-slate-400 hover:text-white">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <div class="space-y-4 text-xs">
+                    <div>
+                        <span class="text-slate-400 block mb-0.5">Nama Berkas Original</span>
+                        <span id="exifName" class="font-mono text-slate-100 break-all">IMG_2025.jpg</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <span class="text-slate-400 block mb-0.5">Resolusi</span>
+                            <span id="exifRes" class="font-semibold text-slate-200">4000 x 3000</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block mb-0.5">Ukuran Berkas</span>
+                            <span id="exifSize" class="font-semibold text-slate-200">12.5 MB</span>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block mb-0.5">Tanggal Diambil (EXIF)</span>
+                        <span id="exifDate" class="text-slate-200">-</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block mb-0.5">Perangkat Kamera</span>
+                        <span id="exifCamera" class="text-slate-200">-</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block mb-1">Album Associated</span>
+                        <select id="exifAlbumSelect" onchange="updatePhotoAlbum(this.value)" class="w-full bg-slate-800 text-slate-200 border border-slate-700 rounded-lg p-2 text-xs outline-none">
+                            <option value="">Tanpa Album</option>
+                        </select>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block mb-1">Tag Foto (Pisahkan koma)</span>
+                        <div class="flex gap-1">
+                            <input type="text" id="exifTagInput" placeholder="Misal: Pantai, Sunset" class="flex-1 bg-slate-800 text-slate-200 border border-slate-700 rounded-lg px-2 py-1.5 text-xs outline-none">
+                            <button onclick="savePhotoTags()" class="bg-brand-600 hover:bg-brand-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium">Simpan</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FIREBASE CONFIGURATION MODAL -->
+    <div id="firebaseModal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-200 dark:border-slate-700 space-y-4">
+            <div class="flex justify-between items-center border-b border-gray-100 dark:border-slate-700 pb-3">
+                <h3 class="font-bold text-base text-gray-900 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-cloud text-brand-500"></i> Pengaturan Firebase Sync
+                </h3>
+                <button onclick="closeModal('firebaseModal')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+                Secara default, aplikasi menyimpan foto di **IndexedDB Browser**. Masukkan Firebase Config untuk menyinkronkan foto ke cloud permanen (Firestore & Storage).
+            </p>
+
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-gray-700 dark:text-gray-300 font-medium mb-1">Firebase Credentials JSON / Object</label>
+                    <textarea id="firebaseConfigInput" rows="6" placeholder='{\n  "apiKey": "AIzaSy...",\n  "authDomain": "app.firebaseapp.com",\n  "projectId": "app-id",\n  "storageBucket": "app.appspot.com"\n}'
+                        class="w-full font-mono bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl p-3 text-gray-800 dark:text-gray-200 focus:ring-1 focus:ring-brand-500 outline-none"></textarea>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between pt-2">
+                <button onclick="clearFirebaseConfig()" class="text-xs text-red-500 hover:underline">Hapus / Reset Config</button>
+                <div class="flex gap-2">
+                    <button onclick="closeModal('firebaseModal')" class="px-4 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-medium">Batal</button>
+                    <button onclick="saveFirebaseConfig()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-medium">Simpan & Connect</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CREATE ALBUM MODAL -->
+    <div id="createAlbumModal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-gray-200 dark:border-slate-700 space-y-4">
+            <div class="flex justify-between items-center pb-2 border-b border-gray-100 dark:border-slate-700">
+                <h3 class="font-bold text-base text-gray-900 dark:text-white">Buat Album Liburan Baru</h3>
+                <button onclick="closeModal('createAlbumModal')" class="text-gray-400 hover:text-gray-600">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Nama Album</label>
+                <input type="text" id="albumNameInput" placeholder="Contoh: Liburan Bali 2025" class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm focus:ring-1 focus:ring-brand-500 outline-none">
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="closeModal('createAlbumModal')" class="px-4 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-medium">Batal</button>
+                <button onclick="createNewAlbum()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-medium">Buat Album</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NETLIFY DEPLOYMENT GUIDE MODAL -->
+    <div id="netlifyModal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-gray-200 dark:border-slate-700 space-y-4">
+            <div class="flex justify-between items-center border-b border-gray-100 dark:border-slate-700 pb-3">
+                <h3 class="font-bold text-base text-gray-900 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-cloud-arrow-up text-teal-500"></i> Cara Deploy Gratis ke Netlify
+                </h3>
+                <button onclick="closeModal('netlifyModal')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3 text-xs text-gray-600 dark:text-gray-300">
+                <p>Web app ini dirancang sebagai **Single Static File** sehingga sangat mudah dipublish ke Netlify tanpa butuh server/build step.</p>
+
+                <ol class="list-decimal list-inside space-y-2 font-medium bg-gray-50 dark:bg-slate-900/50 p-4 rounded-xl border border-gray-200/60 dark:border-slate-700">
+                    <li>Simpan file ini dengan nama <code class="bg-teal-100 dark:bg-teal-950 text-teal-700 dark:text-teal-300 px-1.5 py-0.5 rounded font-mono">index.html</code>.</li>
+                    <li>Buka browser dan masuk ke <a href="https://app.netlify.com/drop" target="_blank" class="text-brand-600 underline">Netlify Drop (app.netlify.com/drop)</a>.</li>
+                    <li>Seret (drag & drop) berkas <code class="font-mono text-xs">index.html</code> atau folder tempat file tersimpan ke area upload Netlify.</li>
+                    <li>Netlify akan langsung memberikan link URL publik gratis (misal: <code class="font-mono text-xs">https://galeri-keluarga.netlify.app</code>).</li>
+                </ol>
+            </div>
+
+            <div class="flex justify-end pt-2">
+                <button onclick="closeModal('netlifyModal')" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-medium">Paham & Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <script>
+        /* ==========================================================================
+           GLOBAL STATE & CONSTANTS
+           ========================================================================== */
+        let db = null;
+        let photos = [];
+        let albums = [];
+        let currentFilter = 'all'; // 'all', 'favorites', albumId, or tag
+        let filterType = 'type';   // 'type', 'album', 'tag'
+        let currentPhotoIndex = -1;
+        let firebaseApp = null;
+        let firebaseStorage = null;
+        let firebaseFirestore = null;
+
+        const DB_NAME = 'FamilyPhotoVaultDB';
+        const DB_VERSION = 1;
+
+        /* ==========================================================================
+           INDEXEDDB NATIVE STORAGE FALLBACK ENGINE
+           ========================================================================== */
+        function initIndexedDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains('photos')) {
+                        db.createObjectStore('photos', { keyPath: 'id' });
+                    }
+                    if (!db.objectStoreNames.contains('albums')) {
+                        db.createObjectStore('albums', { keyPath: 'id' });
+                    }
+                };
+                request.onsuccess = (e) => {
+                    db = e.target.result;
+                    resolve(db);
+                };
+                request.onerror = (e) => reject(e);
+            });
+        }
+
+        async function savePhotoToIDB(photoRecord) {
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction('photos', 'readwrite');
+                const store = tx.objectStore('photos');
+                const req = store.put(photoRecord);
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = (e) => reject(e);
+            });
+        }
+
+        async function getAllPhotosFromIDB() {
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction('photos', 'readonly');
+                const store = tx.objectStore('photos');
+                const req = store.getAll();
+                req.onsuccess = () => resolve(req.result || []);
+                req.onerror = (e) => reject(e);
+            });
+        }
+
+        async function deletePhotoFromIDB(id) {
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction('photos', 'readwrite');
+                const store = tx.objectStore('photos');
+                const req = store.delete(id);
+                req.onsuccess = () => resolve();
+                req.onerror = (e) => reject(e);
+            });
+        }
+
+        async function saveAlbumToIDB(albumRecord) {
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction('albums', 'readwrite');
+                const store = tx.objectStore('albums');
+                const req = store.put(albumRecord);
+                req.onsuccess = () => resolve();
+                req.onerror = (e) => reject(e);
+            });
+        }
+
+        async function getAllAlbumsFromIDB() {
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction('albums', 'readonly');
+                const store = tx.objectStore('albums');
+                const req = store.getAll();
+                req.onsuccess = () => resolve(req.result || []);
+                req.onerror = (e) => reject(e);
+            });
+        }
+
+        /* ==========================================================================
+           FIREBASE OPTIONAL CLOUD STORAGE INTEGRATION
+           ========================================================================== */
+        async function initFirebaseIfConfigured() {
+            const storedConfig = localStorage.getItem('vault_firebase_config');
+            const syncBadge = document.getElementById('syncBadge');
+            const storageModeTag = document.getElementById('storageModeTag');
+
+            if (!storedConfig) {
+                syncBadge.className = "absolute top-1 right-1 w-2.5 h-2.5 bg-amber-500 rounded-full border-2 border-white dark:border-slate-900";
+                storageModeTag.innerText = "Mode: Local IndexedDB";
+                return;
+            }
+
+            try {
+                const config = JSON.parse(storedConfig);
+                // Dynamic import Firebase modules from CDN
+                const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js');
+                const { getStorage } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js');
+                const { getFirestore } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
+
+                firebaseApp = initializeApp(config);
+                firebaseStorage = getStorage(firebaseApp);
+                firebaseFirestore = getFirestore(firebaseApp);
+
+                syncBadge.className = "absolute top-1 right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900";
+                storageModeTag.innerText = "Mode: Firebase Cloud";
+                showToast("Terhubung ke Firebase Storage!", "success");
+            } catch (err) {
+                console.error("Firebase init failed:", err);
+                syncBadge.className = "absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-slate-900";
+                showToast("Gagal terhubung ke Firebase. Kembali ke IndexedDB.", "error");
+            }
+        }
+
+        function saveFirebaseConfig() {
+            const raw = document.getElementById('firebaseConfigInput').value.trim();
+            if (!raw) return;
+            try {
+                JSON.parse(raw); // validate JSON
+                localStorage.setItem('vault_firebase_config', raw);
+                closeModal('firebaseModal');
+                initFirebaseIfConfigured();
+            } catch (e) {
+                showToast("Format JSON Firebase Config tidak valid!", "error");
+            }
+        }
+
+        function clearFirebaseConfig() {
+            localStorage.removeItem('vault_firebase_config');
+            document.getElementById('firebaseConfigInput').value = '';
+            closeModal('firebaseModal');
+            initFirebaseIfConfigured();
+            showToast("Config Firebase dihapus.", "info");
+        }
+
+        /* ==========================================================================
+           FILE UPLOADING & METADATA EXTRACTION (UNCOMPRESSED PIPELINE)
+           ========================================================================== */
+        function triggerFileInput() {
+            document.getElementById('fileInput').click();
+        }
+
+        function handleFileSelect(e) {
+            const files = Array.from(e.target.files);
+            processUploadFiles(files);
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.getElementById('dropZone').classList.add('border-brand-500', 'bg-brand-50/20');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.getElementById('dropZone').classList.remove('border-brand-500', 'bg-brand-50/20');
+        }
+
+        function handleFileDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.getElementById('dropZone').classList.remove('border-brand-500', 'bg-brand-50/20');
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                processUploadFiles(Array.from(e.dataTransfer.files));
+            }
+        }
+
+        async function processUploadFiles(files) {
+            if (files.length === 0) return;
+
+            const progressContainer = document.getElementById('uploadProgressContainer');
+            const progressBar = document.getElementById('uploadProgressBar');
+            const percentText = document.getElementById('uploadPercentText');
+            const statusText = document.getElementById('uploadStatusText');
+
+            progressContainer.classList.remove('hidden');
+
+            let completed = 0;
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                if (!file.type.startsWith('image/')) continue;
+
+                statusText.innerText = `Mengunggah (${i + 1}/${files.length}): ${file.name}`;
+                
+                // Read original resolution & EXIF metadata without compression
+                const metadata = await extractMetadata(file);
+
+                const photoRecord = {
+                    id: 'photo_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+                    name: file.name,
+                    size: file.size,
+                    type: file.type,
+                    dateAdded: Date.now(),
+                    isFavorite: false,
+                    albumId: currentFilter !== 'all' && currentFilter !== 'favorites' ? currentFilter : '',
+                    tags: [],
+                    blob: file, // Keep bit-for-bit uncompressed Blob object
+                    metadata: metadata
+                };
+
+                await savePhotoToIDB(photoRecord);
+                photos.unshift(photoRecord);
+
+                completed++;
+                const percent = Math.round((completed / files.length) * 100);
+                progressBar.style.width = percent + '%';
+                percentText.innerText = percent + '%';
+            }
+
+            setTimeout(() => {
+                progressContainer.classList.add('hidden');
+                progressBar.style.width = '0%';
+                showToast(`${completed} foto berhasil disimpan tanpa kompresi!`, 'success');
+                renderGallery();
+                updateStorageStats();
+            }, 500);
+        }
+
+        function extractMetadata(file) {
+            return new Promise((resolve) => {
+                const metadata = {
+                    width: 0,
+                    height: 0,
+                    dateTaken: new Date(file.lastModified).toLocaleDateString('id-ID'),
+                    camera: 'Unknown Camera'
+                };
+
+                const img = new Image();
+                const url = URL.createObjectURL(file);
+                
+                img.onload = () => {
+                    metadata.width = img.naturalWidth;
+                    metadata.height = img.naturalHeight;
+                    URL.revokeObjectURL(url);
+
+                    // Attempt EXIF read using EXIF-JS library
+                    EXIF.getData(file, function() {
+                        const make = EXIF.getTag(this, "Make");
+                        const model = EXIF.getTag(this, "Model");
+                        const dateTime = EXIF.getTag(this, "DateTimeOriginal");
+
+                        if (make || model) {
+                            metadata.camera = `${make || ''} ${model || ''}`.trim();
+                        }
+                        if (dateTime) {
+                            metadata.dateTaken = dateTime;
+                        }
+                        resolve(metadata);
+                    });
+                };
+
+                img.onerror = () => resolve(metadata);
+                img.src = url;
+            });
+        }
+
+        /* ==========================================================================
+           UI GALLERY RENDER & FILTERING ENGINE
+           ========================================================================== */
+        function renderGallery() {
+            const grid = document.getElementById('photoGrid');
+            const emptyState = document.getElementById('emptyState');
+            grid.innerHTML = '';
+
+            let filtered = [...photos];
+
+            // Apply Filters
+            if (currentFilter === 'favorites') {
+                filtered = filtered.filter(p => p.isFavorite);
+            } else if (filterType === 'album' && currentFilter) {
+                filtered = filtered.filter(p => p.albumId === currentFilter);
+            } else if (filterType === 'tag' && currentFilter) {
+                filtered = filtered.filter(p => p.tags && p.tags.includes(currentFilter));
+            }
+
+            // Apply Search Query
+            const query = document.getElementById('searchInput').value.toLowerCase().trim();
+            if (query) {
+                filtered = filtered.filter(p => 
+                    p.name.toLowerCase().includes(query) || 
+                    (p.tags && p.tags.some(t => t.toLowerCase().includes(query)))
+                );
+            }
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+            } else {
+                emptyState.classList.add('hidden');
+                emptyState.classList.remove('flex');
+
+                filtered.forEach((photo) => {
+                    const objectUrl = URL.createObjectURL(photo.blob);
+                    const formattedSize = formatBytes(photo.size);
+
+                    const card = document.createElement('div');
+                    card.className = "masonry-item bg-white dark:bg-slate-800 rounded-2xl overflow-hidden border border-gray-200/80 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all group relative";
+                    
+                    card.innerHTML = `
+                        <div class="relative overflow-hidden cursor-pointer bg-gray-100 dark:bg-slate-900" onclick="openLightbox('${photo.id}')">
+                            <img src="${objectUrl}" alt="${photo.name}" class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-300">
+                            
+                            <!-- Badges Top Right -->
+                            <div class="absolute top-3 right-3 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onclick="event.stopPropagation(); toggleFavorite('${photo.id}')" class="p-2 rounded-full bg-black/50 text-white hover:bg-black/80 transition-colors">
+                                    <i class="${photo.isFavorite ? 'fa-solid text-amber-400' : 'fa-regular'} fa-star"></i>
+                                </button>
+                            </div>
+
+                            <!-- Resolution Overlay Pill -->
+                            <div class="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md text-white text-[10px] font-medium px-2 py-1 rounded-lg">
+                                ${photo.metadata?.width || '?'}x${photo.metadata?.height || '?'} • ${formattedSize}
+                            </div>
+                        </div>
+
+                        <div class="p-3">
+                            <h4 class="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">${photo.name}</h4>
+                            <div class="flex items-center justify-between mt-2 text-[11px] text-gray-500 dark:text-gray-400">
+                                <span>${photo.metadata?.dateTaken || ''}</span>
+                                <button onclick="downloadSinglePhoto('${photo.id}')" class="text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1">
+                                    <i class="fa-solid fa-download"></i> Original
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            }
+
+            updateCounts();
+            renderSidebarLists();
+        }
+
+        /* ==========================================================================
+           LIGHTBOX VIEWER LOGIC
+           ========================================================================== */
+        function openLightbox(photoId) {
+            const index = photos.findIndex(p => p.id === photoId);
+            if (index === -1) return;
+
+            currentPhotoIndex = index;
+            updateLightboxContent();
+            document.getElementById('lightboxModal').classList.remove('hidden');
+        }
+
+        function closeLightbox() {
+            document.getElementById('lightboxModal').classList.add('hidden');
+            document.getElementById('exifSidebar').classList.add('hidden');
+        }
+
+        function updateLightboxContent() {
+            const photo = photos[currentPhotoIndex];
+            if (!photo) return;
+
+            const objectUrl = URL.createObjectURL(photo.blob);
+            document.getElementById('lightboxImage').src = objectUrl;
+            document.getElementById('lightboxFilename').innerText = photo.name;
+            document.getElementById('lightboxDimensions').innerText = `${photo.metadata?.width || '?'} x ${photo.metadata?.height || '?'} px • ${formatBytes(photo.size)}`;
+            
+            // Star status
+            const starIcon = document.getElementById('lightboxStarBtn').querySelector('i');
+            starIcon.className = photo.isFavorite ? "fa-solid fa-star text-amber-400" : "fa-regular fa-star";
+
+            // Populate EXIF drawer
+            document.getElementById('exifName').innerText = photo.name;
+            document.getElementById('exifRes').innerText = `${photo.metadata?.width || 0} x ${photo.metadata?.height || 0}`;
+            document.getElementById('exifSize').innerText = formatBytes(photo.size);
+            document.getElementById('exifDate').innerText = photo.metadata?.dateTaken || '-';
+            document.getElementById('exifCamera').innerText = photo.metadata?.camera || '-';
+            document.getElementById('exifTagInput').value = (photo.tags || []).join(', ');
+
+            // Populate Album select dropdown in Exif Sidebar
+            const albumSelect = document.getElementById('exifAlbumSelect');
+            albumSelect.innerHTML = '<option value="">Tanpa Album</option>';
+            albums.forEach(alb => {
+                const opt = document.createElement('option');
+                opt.value = alb.id;
+                opt.innerText = alb.name;
+                if (photo.albumId === alb.id) opt.selected = true;
+                albumSelect.appendChild(opt);
+            });
+        }
+
+        function navigateLightbox(direction) {
+            if (photos.length === 0) return;
+            currentPhotoIndex = (currentPhotoIndex + direction + photos.length) % photos.length;
+            updateLightboxContent();
+        }
+
+        function toggleExifSidebar() {
+            const sidebar = document.getElementById('exifSidebar');
+            sidebar.classList.toggle('hidden');
+        }
+
+        function downloadOriginal() {
+            const photo = photos[currentPhotoIndex];
+            if (!photo) return;
+            downloadBlob(photo.blob, photo.name);
+        }
+
+        function downloadSinglePhoto(photoId) {
+            const photo = photos.find(p => p.id === photoId);
+            if (photo) downloadBlob(photo.blob, photo.name);
+        }
+
+        function downloadBlob(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        async function deleteCurrentPhoto() {
+            const photo = photos[currentPhotoIndex];
+            if (!photo) return;
+
+            await deletePhotoFromIDB(photo.id);
+            photos.splice(currentPhotoIndex, 1);
+
+            if (photos.length === 0) {
+                closeLightbox();
+            } else {
+                currentPhotoIndex = currentPhotoIndex % photos.length;
+                updateLightboxContent();
+            }
+            renderGallery();
+            updateStorageStats();
+            showToast('Foto berhasil dihapus.', 'info');
+        }
+
+        /* ==========================================================================
+           ALBUMS & TAGS MANAGEMENT
+           ========================================================================== */
+        async function createNewAlbum() {
+            const input = document.getElementById('albumNameInput');
+            const name = input.value.trim();
+            if (!name) return;
+
+            const newAlbum = {
+                id: 'alb_' + Date.now(),
+                name: name,
+                dateCreated: Date.now()
+            };
+
+            await saveAlbumToIDB(newAlbum);
+            albums.push(newAlbum);
+            input.value = '';
+            closeModal('createAlbumModal');
+            renderSidebarLists();
+            showToast(`Album "${name}" dibuat!`, 'success');
+        }
+
+        function setFilter(filter, type = 'type') {
+            currentFilter = filter;
+            filterType = type;
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-brand-50', 'text-brand-600', 'dark:bg-brand-950/50', 'dark:text-brand-400');
+            });
+
+            if (type === 'type') {
+                const activeNav = document.getElementById(`nav-${filter}`);
+                if (activeNav) activeNav.classList.add('bg-brand-50', 'text-brand-600', 'dark:bg-brand-950/50', 'dark:text-brand-400');
+                
+                document.getElementById('currentFilterTitle').innerText = filter === 'favorites' ? 'Foto Favorit' : 'Semua Foto Liburan';
+            } else if (type === 'album') {
+                const alb = albums.find(a => a.id === filter);
+                document.getElementById('currentFilterTitle').innerText = alb ? `Album: ${alb.name}` : 'Album Liburan';
+            } else if (type === 'tag') {
+                document.getElementById('currentFilterTitle').innerText = `Tag: #${filter}`;
+            }
+
+            renderGallery();
+        }
+
+        async function updatePhotoAlbum(albumId) {
+            const photo = photos[currentPhotoIndex];
+            if (!photo) return;
+            photo.albumId = albumId;
+            await savePhotoToIDB(photo);
+            showToast('Album foto diperbarui', 'success');
+        }
+
+        async function savePhotoTags() {
+            const photo = photos[currentPhotoIndex];
+            if (!photo) return;
+            const tagInput = document.getElementById('exifTagInput').value;
+            photo.tags = tagInput.split(',').map(t => t.trim()).filter(Boolean);
+            await savePhotoToIDB(photo);
+            renderSidebarLists();
+            showToast('Tag berhasil disimpan', 'success');
+        }
+
+        async function toggleFavorite(photoId) {
+            const photo = photos.find(p => p.id === photoId);
+            if (!photo) return;
+            photo.isFavorite = !photo.isFavorite;
+            await savePhotoToIDB(photo);
+            renderGallery();
+        }
+
+        async function toggleFavoriteCurrent() {
+            const photo = photos[currentPhotoIndex];
+            if (!photo) return;
+            await toggleFavorite(photo.id);
+            updateLightboxContent();
+        }
+
+        function renderSidebarLists() {
+            // Render Albums
+            const albumList = document.getElementById('albumList');
+            albumList.innerHTML = '';
+            albums.forEach(alb => {
+                const count = photos.filter(p => p.albumId === alb.id).length;
+                const btn = document.createElement('button');
+                btn.className = `w-full flex items-center justify-between px-3 py-1.5 text-xs rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors ${currentFilter === alb.id ? 'font-bold text-brand-600 dark:text-brand-400' : 'text-gray-600 dark:text-gray-400'}`;
+                btn.onclick = () => setFilter(alb.id, 'album');
+                btn.innerHTML = `
+                    <span class="truncate flex items-center gap-2"><i class="fa-regular fa-folder"></i> ${alb.name}</span>
+                    <span class="text-[10px] bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded-full">${count}</span>
+                `;
+                albumList.appendChild(btn);
+            });
+
+            // Render Tags
+            const tagsSet = new Set();
+            photos.forEach(p => { if (p.tags) p.tags.forEach(t => tagsSet.add(t)); });
+            const tagsList = document.getElementById('tagsList');
+            tagsList.innerHTML = '';
+            tagsSet.forEach(tag => {
+                const btn = document.createElement('button');
+                btn.className = "text-[11px] px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-brand-50 hover:text-brand-600 transition-colors";
+                btn.onclick = () => setFilter(tag, 'tag');
+                btn.innerText = `#${tag}`;
+                tagsList.appendChild(btn);
+            });
+        }
+
+        /* ==========================================================================
+           UTILITY FUNCTIONS & HELPERS
+           ========================================================================== */
+        function updateCounts() {
+            document.getElementById('count-all').innerText = photos.length;
+            document.getElementById('count-favorites').innerText = photos.filter(p => p.isFavorite).length;
+        }
+
+        function updateStorageStats() {
+            const totalBytes = photos.reduce((acc, p) => acc + (p.size || 0), 0);
+            document.getElementById('storageUsedText').innerText = `${formatBytes(totalBytes)} Terpakai`;
+
+            // Standard IndexedDB soft limit visual estimate (5 GB)
+            const limitBytes = 5 * 1024 * 1024 * 1024;
+            const percent = Math.min(100, Math.round((totalBytes / limitBytes) * 100));
+            document.getElementById('storageBar').style.width = percent + '%';
+        }
+
+        function formatBytes(bytes, decimals = 1) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+
+        function handleSearch() {
+            renderGallery();
+        }
+
+        function handleSortChange() {
+            const sortBy = document.getElementById('sortBySelect').value;
+            if (sortBy === 'newest') photos.sort((a, b) => b.dateAdded - a.dateAdded);
+            if (sortBy === 'oldest') photos.sort((a, b) => a.dateAdded - b.dateAdded);
+            if (sortBy === 'size') photos.sort((a, b) => b.size - a.size);
+            if (sortBy === 'name') photos.sort((a, b) => a.name.localeCompare(b.name));
+            renderGallery();
+        }
+
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            const icon = document.getElementById('themeIcon');
+            if (document.documentElement.classList.contains('dark')) {
+                icon.className = "fa-solid fa-moon text-lg";
+            } else {
+                icon.className = "fa-solid fa-sun text-lg text-amber-500";
+            }
+        }
+
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        function showToast(msg, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            const bgClass = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-red-600' : 'bg-slate-800';
+            toast.className = `${bgClass} text-white text-xs px-4 py-3 rounded-xl shadow-lg pointer-events-auto flex items-center gap-2 transition-all duration-300 transform translate-y-2 opacity-0`;
+            toast.innerHTML = `<i class="fa-solid fa-circle-info"></i> ${msg}`;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        /* Keyboard Listener for Lightbox */
+        document.addEventListener('keydown', (e) => {
+            const lightbox = document.getElementById('lightboxModal');
+            if (!lightbox.classList.contains('hidden')) {
+                if (e.key === 'Escape') closeLightbox();
+                if (e.key === 'ArrowLeft') navigateLightbox(-1);
+                if (e.key === 'ArrowRight') navigateLightbox(1);
+            }
+        });
+
+        /* ==========================================================================
+           APP INITIALIZATION ENTRY POINT
+           ========================================================================== */
+        window.addEventListener('DOMContentLoaded', async () => {
+            await initIndexedDB();
+            photos = await getAllPhotosFromIDB();
+            albums = await getAllAlbumsFromIDB();
+
+            await initFirebaseIfConfigured();
+
+            renderGallery();
+            updateStorageStats();
+        });
+    </script>
+</body>
+</html>
